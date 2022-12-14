@@ -1,0 +1,65 @@
+solution guide
+phase1: 
+using x/s print the string of the the memory address ( x/s 0x27d0)
+
+phase2: 
+line 14 rsp=0
+line 25 rbp=rsp=0
+ line 37-41 is the loop and seek 6 numbers
+the key is line<+49>:    add    -0x4(%rbp,%rbx,4),%eax, 
+line <+53>:    cmp    %eax,0x0(%rbp,%rbx,4)
+ so the next value is the first value plus the value of rbx, and rbx from 0 to 5 increment 1 each time
+the first number is 1, because rbx=1 and rbp=0, 1+0 
+the second is 2,because previous value+1, 1+1 and so on
+Answer is 1 2 4 7 11 16
+
+phase3:
+line 14, x/s 0x555555556a8e is ask 2 int(%d %d)
+it has 8 solution sets, I use line 77: 0x24f hex to deci is 591, and correspond number 2
+which 2 591
+
+phase4:
+line 14 x/s 0x555555556a8e(%d,%d)
+disas func4 to find out
+it is recursive function from line 31/43
+ 2nd argument 0x8(%rsp)
+1st argument 0xc(%rsp) 
+line 36  cmpl   $0xe,0xc(%rsp)  ,1 st argument less than or equal 0xe(14) and finally get 10
+line 72 cmpl   $0x25,0x8(%rsp)  get the second argument is 0x25(37)
+
+phase 5:
+we need to run the loop 15 times
+after each loop check $eax get value of the sequence
+1st argument is the first value we start
+2nd argument is the sum of the sequence
+ the sequence is 5 12 3 7 11 13 9 4 8 0 10 1 2 14 6 15 
+which 5 115
+
+phase 6:
+find the node where start, using x/x 0x555555758630
+Then order from largest to smallest
+node 1 431
+         2 569
+         3 166 
+         4 117
+         5 74
+6 is extremely high value
+note the top value should be on the top of stack which means node 1 correspond number 6, node 2 correspond number 5 and so on.
+answer is 1 5 6 4 3 2
+
+secret phase:
+disas phase_defused
+x/s 0x555555556acd get %d %d %s
+x/s 0x555555556ad6 get DrEvil
+the entry is behind phase4 because it has “invalid phase4” after secret phase
+Note that fun7 recursive function
+x/s 0x555555758550 get the node
+       36
+   8       50
+6   22 45 107
+return value= 6
+Rule Leftchild=0 Righchild=1
+1st ; prev + 2x1 if R else prev + 2x0
+2nd: prev + 2x2 if R else prev + 2x0
+we need L R R, which the answer is between 22-36
+answer is 35
