@@ -1,0 +1,61 @@
+optimization
+without openMP
+MakeFile
+change g-00 to g-04,It will greatly reduce the cpe, which should change the performance of the GPU
+Filter.h:
+change the type of dim,divsior datat from int to short，and make them as public function
+Filter.cpp:
+change the type of data array form int to short which (data = new short [dim * dim])
+cs1300bmp.h
+change the type of R/G/B fields from int to short which (short color[MAX_COLORS][MAX_DIM][MAX_DIM])
+Filtermain.cpp
+1.Create variables instead of equations, such as input -> width，input -> height，output -> color[plane][row][col]，
+beside，We added the public equation before, you can directly call filter -> divisor and filter->data
+
+2.Reorder 3 for loop， put plane first，then column and row，because the R/G/B fields is 【plane】【column】【row】To be 
+consistent with it, only the operation will be faster. In class, we talked about memory mountain
+
+3.loop unrooling,For col，I used the parallel operation, 2 times in a cycle, that is, col+=2 here. The subsequent output 
+should also have a line with extra col+1, otherwise, the color value will be wrong
+
+4.Because we already know that the size of the filter is 9x9, there will be 9 coordinates (0,0) to (2,2),
+but I use data as the pointer, so directly data[0] to data[9], then row and col plus 1 or minus 1 corresponds to 9 data
+arrays, for example, it is at the beginning is input->color[plane][row-1][col-1]and at the end is input->color[plane]
+[row+1][col+1] Finally, create three pointer variables input1, input2, input3 to replace input->color[plane][row-1]
+and so on. This may reduce the cpe, because after storing common data, the program does not need to get the data one by one. 
+And 3 is because our dimension of plane is 3.
+
+5.Create 2 variables result1 and result2 to get the total value. I staggered them once because the program will run 
+adjacent addresses, which will reduce the time. I created a condition that will result/=divisor when divispr is greater 
+than 1. Because less than or equal to 1 is meaningless for the average value, in fact, I did this so that the program 
+did not cause problems and reduced dozens of cpe
+
+6.Originally, I finally judged that greater than 255 and less than 0 are the if conditions. I used the if else condition,
+so if a value is greater than 255, it is 255. There is no need to judge whether it is less than 0, which will reduce the
+running time.
+
+Extra credit
+With openMp（score is greter than 100）
+MakeFile：
+change g-00 to g-04,It will greatly reduce the cpe, which should change the performance of the GPU，include a openmp.h file
+Filter.h:
+change the type of dim,divsior datat from int to char，and make them as public function
+Filter.cpp:
+change the type of data array form int to char which (data = new char [dim * dim])
+cs1300bmp.h
+change the type of R/G/B fields from int to short which (short color[MAX_COLORS][MAX_DIM][MAX_DIM])
+Filtermain.cpp
+Keep the changes before without openmp,include omp literary and include openmp.h on the top,remove the plane for loop,
+instead of plane[0]plane[1]plane[2],because most of the function we define in openmp.h
+(#pragma omp parallel for) on the top of row for loop,because it stated the inside loop do the parallel things,for example
+you can do (#pragma omp parallel for num_thread(6))Initliazed this program has 6 threads，the introduce is
+https://www.openmp.org/specifications/ ， https://zh.wikipedia.org/wiki/OpenMP
+openmp.h
+1.define a LOOP function take pararmeters of (plane, row, col, i, j),originally is filter -> data[i * dim + j],because we
+know the dim is constant 3 so it will befilter -> data[i * 3 + j],other stay same.
+
+2.define a getfilter function take pararmeters of (plane, row, col, i, j),it will run the previous Loop function.basiclly 
+has 9 row,correspond,(i,j)from (0,0)to(2,2),keep plane,row,col stay same
+
+3.define a plane funtion, it will run the previous getfilter function.Use it to grab the result,then divided it, 
+then judge a value greater than 255 or less than 0.
