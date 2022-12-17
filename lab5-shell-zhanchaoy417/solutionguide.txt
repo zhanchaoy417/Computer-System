@@ -1,0 +1,55 @@
+lab5
+resource：http://www.cs.cmu.edu/afs/cs/academic/class/15213-s14/www/recitations/rec9.pdf
+
+eval:
+ initalal we have sigaddset(&mask_all, SIGCHLD);then I add sigint and sigstop.
+If it is not the built-in command buildcmd, add blocking in the function
+Next child and parent process，remove blocking
+Child process：Readmd in github suggest setpgid(0,0), it can initialized pid=0, other thing is original code
+Parent process: 
+background: add job to background, print message according the test case(to passed)
+foreground: add job to foreground，Global variables are used when printing in the background, so add blocking, and then the foreground waits for the end of the child process, using the waitpid equation given
+
+builtin_cmd:
+strcmp takes two parameters, if the command matches with the first argument, it should return the index of the argument which is 0. 
+if command is “quit”,call exit, which exit the function
+if command is “bg” or “fg”, call the function do_bgfg in tsh.cc, it role is send SIGCONT signal, then use parameter as “argv” array, which do_bgfg(argv), after the call,return true
+if command is “jobs”, call function in job.cc,there is listjobs function which print all the jobs, after the call,return true
+
+do_bgfg:
+we will use jobp which a pointer to point the pid,state,also use it to point pid,jid,comline for print in bg case.
+ fg,bg is stop signal and send SIGCOUNT, use kill is a easy way to stop,if pid positive,send signal with pid=id,if pid negative,send signal with pid=-id
+for bg(along foreground),we need to change the state
+for fg(suspend foreground),we need to change the state and the next function waitfg in tsh.cc, it role is block single fg process
+
+waitfg:
+while pid =fgpid, fg is send SIGCOUT signal along foreground,job could be a pid or job id, so fgpid(jobs) is check if it equal pid, then call sleep
+
+sigchld_handler：
+use WNOHANG|WUNTRACED is Return immediately，
+use WIFEXITED,WIFSIGNALED,WIFSTOPPED to get the status of termination and child process exit.
+so detect any terminate,stopped jobs.
+WIFEXITED,WIFSIGNALED are both normal exit and exit with signal(ctrl C) use the deletejob equation of job.h, and the signal exit requires printing information. When call deletejob function,modify its state, job->state = UNDEF.
+WIFSTOPPED (ctrl Z)is terminated, first print the information, and finally modify its state.
+getjobpid(jobs,pid)->state is indicted the process is stopped.
+
+sigstp_handler,sigint_handler:
+they are stop signal of the keyboard and the stop of the terminal, their code will be identical.
+use function fgpid in job.cc, return the pid number of the running job
+to stop, pid!=0 mean no foreground job, then use kill, take pid number and the signal,if pid positive,send signal with pid=id,if pid negative,send signal with pid=-id
+about control flow when pass ctrl-z,entering ctrl-z should cause the SIGTSTP signal to be sent to the current foreground job and its descendants (for example, any child processes it spawns). If there is no foreground job, this signal should be invalid
+
+Fork/execve:
+Fork is a function called once but return twice, 0 mean returned in the child,pid mean returned in the parent.Returns -1 in case of failure.
+int execve(const char *filename, char *const argv[],char *const envp[]); The execve function call once, uses the parameter list argv and the environment variable list envp to load and run the target file. It will not create a new process. The new program still has the same PID，when the execve function is called,if it is successful, does not return or returns -1 on failure.
+process group purpose and implementations:Fork:Clone the current process. The new process will get a new pid, but with the same pgid, the new program is in exactly the same state as the parents.But we need to modify the group id of the child process Execve:Set independent process group id, replace the current process with the new process. The binary file will be run by the current process.
+
+Race Condition:
+Race conditions occur when sequence or timing of events are random or unknown.
+Signal handlers will interrupt currently running code.When forking, child or parent run in different order. To fix for race,when bg,change job state to bg,same as fg. When pid=0(child process),add jobs with pid,when WIFEXITED(exit case), then delete jobs.
+
+Modification jobs with addjob and deletejob with 4 parameter jobs, pid, state, cmdline,one function is add job in the jobs linked list, another function is delete the job of pid in the jobs linked list. It is need because the program needs to know when change the process state(running or stopped),in job.cc,we will see 4 case background,foreground,stop case and default
+
+
+
+
